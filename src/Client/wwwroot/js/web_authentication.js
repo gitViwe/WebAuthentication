@@ -12,7 +12,7 @@ const coerceToBase64Url = (x) => {
         .replace(/=*$/g, "");
 };
 
-const ProcessRegistration = async (registrationOptions) => {
+window.ProcessRegistration = async function ProcessRegistration(registrationOptions) {
 
     const publicKeyCredentialCreationOptions = {
         ...registrationOptions,
@@ -66,7 +66,7 @@ const ProcessRegistration = async (registrationOptions) => {
     return data;
 }
 
-const ProcessAuthentication = async (authenticationOptions) => {
+window.ProcessAuthentication = async function ProcessAuthentication(authenticationOptions) {
 
     const publicKey = {
         ...authenticationOptions,
@@ -102,8 +102,3 @@ const ProcessAuthentication = async (authenticationOptions) => {
 
     return data;
 }
-
-export default { ProcessRegistration, ProcessAuthentication };
-
-window.ProcessRegistration = ProcessRegistration;
-window.ProcessAuthentication = ProcessAuthentication;

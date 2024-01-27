@@ -34,7 +34,7 @@ public class WebAuthentication(
         var result = await _registrationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginRegistrationCeremonyRequest(
-                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167"]),
+                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167", "http://localhost:5136"]),
                 topOrigins: null,
                 rpDisplayName: "Passkeys demonstration",
                 user: new PublicKeyCredentialUserEntity(
@@ -103,7 +103,7 @@ public class WebAuthentication(
         var result = await _authenticationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginAuthenticationCeremonyRequest(
-                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167"]),
+                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167", "http://localhost:5136"]),
                 topOrigins: null,
                 userHandle: null,
                 challengeSize: 32,

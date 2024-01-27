@@ -1,5 +1,6 @@
 using API;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebAuthn.Net.Models.Protocol.Json.AuthenticationCeremony.VerifyAssertion;
 using WebAuthn.Net.Models.Protocol.Json.RegistrationCeremony.CreateCredential;
 using WebAuthn.Net.Storage.SqlServer.Configuration.DependencyInjection;
@@ -7,10 +8,14 @@ using WebAuthn.Net.Storage.SqlServer.Configuration.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<DbContext>(options =>
+{
+    options.UseSqlServer(Environment.GetEnvironmentVariable("MSSQL_CONNECTION_STRING")!);
+});
 builder.Services.AddWebAuthnSqlServer(
     configureSqlServer: sqlServer =>
     {
-        sqlServer.ConnectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=hubviwe-webauthn;Trusted_Connection=True;";
+        sqlServer.ConnectionString = Environment.GetEnvironmentVariable("MSSQL_CONNECTION_STRING")!;
     });
 builder.Services.AddMemoryCache();
 builder.Services.AddTransient<WebAuthentication>();
@@ -21,20 +26,10 @@ builder.Services.AddCors(options =>
         builder
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .SetIsOriginAllowed(origin => true)
+            .WithOrigins("https://localhost:7167;http://localhost:5136".Split(';'))
             .AllowCredentials();
     });
 });
-//builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-//    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, static options =>
-//    {
-//        options.ExpireTimeSpan = TimeSpan.FromDays(1);
-//        options.SlidingExpiration = false;
-//        options.Cookie.SameSite = SameSiteMode.None;
-//        options.Cookie.HttpOnly = true;
-//        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-//    });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -49,6 +44,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.RunScript();
 
 app.MapGet("/registration-options", async ([FromServices] WebAuthentication auth, HttpContext context) =>
 {
