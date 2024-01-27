@@ -1,0 +1,52 @@
+﻿@page "/"
+@inject IJSRuntime JS
+@inject IHttpClientFactory Factory
+
+<PageTitle>Home</PageTitle>
+
+<MudTextField Label="Registered as"
+              Variant="Variant.Outlined"
+              Disabled=true
+              @bind-Value=Model.RegisteredUserName
+              Class="my-6" />
+
+<MudTextField Label="Authenticated as"
+              Variant="Variant.Outlined"
+              Disabled=true
+              @bind-Value=Model.AuthenticateUserName
+              Class="my-6" />
+
+<MudStack Spacing="2">
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Large"
+               OnClick="RegisterAsync"
+               Disabled="_processing"
+               FullWidth="true">
+        @if (_processing)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+            <MudText Class="ms-2">Processing</MudText>
+        }
+        else
+        {
+            <MudText>Register</MudText>
+        }
+    </MudButton>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Large"
+               OnClick="AuthenticateAsync"
+               Disabled="_processing"
+               FullWidth="true">
+        @if (_processing)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+            <MudText Class="ms-2">Processing</MudText>
+        }
+        else
+        {
+            <MudText>Authenticate</MudText>
+        }
+    </MudButton>
+</MudStack>
