@@ -1,4 +1,5 @@
 using Client;
+using Client.Manager;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -8,12 +9,9 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services
-    .AddTransient<CookieHandler>()
-    .AddScoped(sp => sp
-        .GetRequiredService<IHttpClientFactory>()
-        .CreateClient("API"))
-    .AddHttpClient("API", client => client.BaseAddress = new Uri("http://localhost:5291"))
-    .AddHttpMessageHandler<CookieHandler>();
+    .AddScoped<WebAuthenticationManager>()
+    .AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("API"))
+    .AddHttpClient("API", client => client.BaseAddress = new Uri("http://localhost:5291"));
 builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();

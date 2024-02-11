@@ -1,6 +1,5 @@
 ﻿@page "/"
 @inject IJSRuntime JS
-@inject IHttpClientFactory Factory
 
 <PageTitle>Home</PageTitle>
 
@@ -48,5 +47,13 @@
         {
             <MudText>Authenticate</MudText>
         }
+    </MudButton>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Large"
+               OnClick="Show"
+               Disabled="_processing"
+               FullWidth="true">
+        <MudText>Show</MudText>
     </MudButton>
 </MudStack>

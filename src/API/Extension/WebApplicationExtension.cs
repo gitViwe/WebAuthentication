@@ -1,15 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using API.Persistence;
+using Microsoft.EntityFrameworkCore;
 
-namespace API;
+namespace API.Extension;
 
-internal static class Setup
+public static class WebApplicationExtension
 {
-    internal static void RunScript(this IHost host)
+    public static WebApplication CreateDatabaseTable(this WebApplication app)
     {
-        using IServiceScope scope = host.Services.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+        using IServiceScope scope = app.Services.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<WebAuthenticationDbContext>();
 
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
         context.Database.ExecuteSqlRaw(
             """
             IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = 'CredentialRecords')
@@ -53,5 +54,7 @@ internal static class Setup
 
             END
             """);
+
+        return app;
     }
 }
