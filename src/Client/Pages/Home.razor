@@ -1,19 +1,11 @@
 ﻿@page "/"
 @inject IJSRuntime JS
-@inject IHttpClientFactory Factory
 
 <PageTitle>Home</PageTitle>
 
-<MudTextField Label="Registered as"
+<MudTextField Label="Username (optional)"
               Variant="Variant.Outlined"
-              Disabled=true
               @bind-Value=Model.RegisteredUserName
-              Class="my-6" />
-
-<MudTextField Label="Authenticated as"
-              Variant="Variant.Outlined"
-              Disabled=true
-              @bind-Value=Model.AuthenticateUserName
               Class="my-6" />
 
 <MudStack Spacing="2">

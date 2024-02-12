@@ -1,20 +1,21 @@
-﻿using Client.Json.AuthenticationCeremony.CreateOptions;
-using Client.Json.AuthenticationCeremony.VerifyAssertion;
-using Client.Json.RegistrationCeremony.CreateCredential;
-using Client.Json.RegistrationCeremony.CreateOptions;
+﻿using Client.Manager;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using System.Net.Http.Json;
+using MudBlazor;
+using Shared;
 
 namespace Client.Pages;
 
 public partial class Home
 {
-    bool _processing = false;
-    string _registrationId = string.Empty;
-    string _authenticationId = string.Empty;
-    private IJSObjectReference module;
+    [Inject] public required WebAuthenticationManager WebAuthenticationManager { get; set; }
+    [Inject] public required KanBanManager KanBanManager { get; set; }
+	[Inject] public required IDialogService DialogService { get; set; }
     public UserData Model { get; set; } = new(string.Empty, string.Empty);
-    private HttpClient Client { get; set; }
+
+    private bool _processing = false;
+    private string _userId = string.Empty;
+    private IJSObjectReference module = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -28,16 +29,8 @@ public partial class Home
     private async Task RegisterAsync()
     {
         _processing = true;
-        _registrationId = Guid.NewGuid().ToString();
-        Client = Factory.CreateClient("API");
 
-        var options = await GetRegistrationOptionsAsync();
-
-        var response = await JS.InvokeAsync<RegistrationResponseJSON>("ProcessRegistration", [options]);
-
-        string userId = await CompleteRegistrationAsync(response);
-
-        Model.RegisteredUserName = userId;
+        _userId = await WebAuthenticationManager.ProcessRegistrationAsync(registrationId: Guid.NewGuid().ToString(), Model.RegisteredUserName);
 
         _processing = false;
     }
@@ -45,48 +38,36 @@ public partial class Home
     private async Task AuthenticateAsync()
     {
         _processing = true;
-        _authenticationId = Guid.NewGuid().ToString();
-        Client = Factory.CreateClient("API");
 
-        var options = await GetAuthenticationOptionsAsync();
-
-        var response = await JS.InvokeAsync<AuthenticationResponseJSON>("ProcessAuthentication", [options]);
-
-        string userId = await CompleteAuthenticationAsync(response);
-
-        Model.AuthenticateUserName = userId;
+        _userId = await WebAuthenticationManager.ProcessAuthenticationAsync(authenticationId: Guid.NewGuid().ToString());
 
         _processing = false;
-    }
 
-    private async Task<PublicKeyCredentialCreationOptionsJSON> GetRegistrationOptionsAsync()
-    {
-        Client.DefaultRequestHeaders.Add("X-WebAuthn-Registration-Id", _registrationId);
-        var options = await Client.GetFromJsonAsync<PublicKeyCredentialCreationOptionsJSON>("registration-options", CancellationToken.None);
-        ArgumentNullException.ThrowIfNull(options, nameof(options));
-        return options;
-    }
+        await ShowDialog();
 
-    private async Task<string> CompleteRegistrationAsync(RegistrationResponseJSON json)
-    {
-        var responseMessage = await Client.PostAsJsonAsync("complete-registration", json, CancellationToken.None);
-        string userId = await responseMessage.Content.ReadAsStringAsync();
-        return userId;
-    }
+	}
 
-    private async Task<PublicKeyCredentialRequestOptionsJSON> GetAuthenticationOptionsAsync()
+    private async Task ShowDialog()
     {
-        Client.DefaultRequestHeaders.Add("X-WebAuthn-Authentication-Id", _authenticationId);
-        var options = await Client.GetFromJsonAsync<PublicKeyCredentialRequestOptionsJSON>("authentication-options", CancellationToken.None);
-        ArgumentNullException.ThrowIfNull(options, nameof(options));
-        return options;
-    }
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
 
-    private async Task<string> CompleteAuthenticationAsync(AuthenticationResponseJSON json)
-    {
-        var responseMessage = await Client.PostAsJsonAsync("complete-authentication", json, CancellationToken.None);
-        string userId = await responseMessage.Content.ReadAsStringAsync();
-        return userId;
+		var data = await KanBanManager.GetUserDetailAsKanBanDialogDataAsync(_userId);
+
+        if (data is not null)
+        {
+            var parameters = new DialogParameters<KanBanDialog>
+            {
+                { x => x.Model, data }
+            };
+
+            var dialogReference = DialogService.Show<KanBanDialog>($"Welcome {data.UserName}", parameters, options);
+            var result = await dialogReference.Result;
+
+            if (false == result.Canceled)
+            {
+                await KanBanManager.UpdateKanBanDataAsync((KanBanDialogData)result.Data);
+            } 
+        }
     }
 }
 
@@ -95,3 +76,5 @@ public class UserData(string RegisterUserName, string AuthenticateUserName)
     public string RegisteredUserName { get; set; } = RegisterUserName;
     public string AuthenticateUserName { get; set; } = AuthenticateUserName;
 }
+
+

@@ -22,7 +22,7 @@ services:
         context: src/
         dockerfile: API/Dockerfile
     environment:
-      MSSQL_CONNECTION_STRING: Server=mssql,1433;Database=hubviwe-webauthn;User Id=SA;Password=Example123;TrustServerCertificate=True;
+      ASPNETCORE_ENVIRONMENT: Docker
     ports:
       - 5291:8080
     depends_on:
@@ -36,3 +36,16 @@ services:
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: Example123
+    volumes:
+      - sqlsystem:/var/opt/mssql/
+
+  redis-cache:
+    image: redis:latest
+    hostname: redis
+    restart: always
+    container_name: redis-cache
+    ports:
+      - 6379:6379
+
+volumes:
+  sqlsystem:

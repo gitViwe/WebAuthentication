@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using gitViwe.Shared.Cache;
+using Microsoft.Extensions.DependencyInjection;
 using WebAuthn.Net.Models.Protocol.Enums;
 using WebAuthn.Net.Models.Protocol.Json.AuthenticationCeremony.CreateOptions;
 using WebAuthn.Net.Models.Protocol.Json.AuthenticationCeremony.VerifyAssertion;
@@ -15,15 +16,25 @@ using WebAuthn.Net.Services.Serialization.Cose.Models.Enums;
 
 namespace API;
 
-public class WebAuthentication(
-    IMemoryCache cache,
-    IRegistrationCeremonyService registrationCeremonyService,
-    IAuthenticationCeremonyService authenticationCeremonyService)
+public class WebAuthentication
 {
-    private readonly IMemoryCache _cache = cache;
-    private readonly IRegistrationCeremonyService _registrationCeremonyService = registrationCeremonyService;
-    private readonly IAuthenticationCeremonyService _authenticationCeremonyService = authenticationCeremonyService;
+    public WebAuthentication(
+        IServiceProvider provider,
+        IRegistrationCeremonyService registrationCeremonyService,
+        IAuthenticationCeremonyService authenticationCeremonyService)
+    {
+        _registrationCeremonyService = registrationCeremonyService;
+        _authenticationCeremonyService = authenticationCeremonyService;
 
+        using var scope = provider.CreateAsyncScope();
+        _cache = scope.ServiceProvider.GetRequiredService<IRedisDistributedCache>();
+        _configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    }
+
+    private readonly IRedisDistributedCache _cache;
+    private readonly IConfiguration _configuration;
+    private readonly IRegistrationCeremonyService _registrationCeremonyService;
+    private readonly IAuthenticationCeremonyService _authenticationCeremonyService;
     private const string WEBAUTHN_REGISTRATION_HEADER = "X-WebAuthn-Registration-Id";
     private const string WEBAUTHN_AUTHENTICATION_HEADER = "X-WebAuthn-Authentication-Id";
 
@@ -34,7 +45,7 @@ public class WebAuthentication(
         var result = await _registrationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginRegistrationCeremonyRequest(
-                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167", "http://localhost:5136"]),
+                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: _configuration["AllowedOrigins"]!.Split(';')),
                 topOrigins: null,
                 rpDisplayName: "Passkeys demonstration",
                 user: new PublicKeyCredentialUserEntity(
@@ -70,7 +81,7 @@ public class WebAuthentication(
 
         string cacheKey = context.Request.Headers[WEBAUTHN_REGISTRATION_HEADER]!;
         ArgumentException.ThrowIfNullOrWhiteSpace(cacheKey, nameof(cacheKey));
-        var a = _cache.Set(cacheKey, result.RegistrationCeremonyId);
+        _cache.Set(cacheKey, result.RegistrationCeremonyId);
 
         return result.Options;
     }
@@ -80,14 +91,14 @@ public class WebAuthentication(
         string cacheKey = context.Request.Headers[WEBAUTHN_REGISTRATION_HEADER]!;
         ArgumentException.ThrowIfNullOrWhiteSpace(cacheKey, nameof(cacheKey));
 
-        string? registrationCeremonyId = _cache.Get<string>(cacheKey);
+        string? registrationCeremonyId = await _cache.GetAsync(cacheKey);
         ArgumentException.ThrowIfNullOrWhiteSpace(registrationCeremonyId, nameof(registrationCeremonyId));
 
         var result = await _registrationCeremonyService.CompleteCeremonyAsync(
             httpContext: context,
             request: new CompleteRegistrationCeremonyRequest(
-                registrationCeremonyId: registrationCeremonyId,
-                description: "Windows Hello Authentication",
+                registrationCeremonyId: registrationCeremonyId.Replace("\"", string.Empty),
+                description: "Web Authentication Demonstration",
                 response: responseJSON),
             cancellationToken: CancellationToken.None);
 
@@ -96,14 +107,12 @@ public class WebAuthentication(
         return result.HasError ? [] : result.Ok.UserHandle;
     }
 
-    public async Task<PublicKeyCredentialRequestOptionsJSON> GetAuthenticationOptionsAsync(HttpContext context, string? userId = null)
+    public async Task<PublicKeyCredentialRequestOptionsJSON> GetAuthenticationOptionsAsync(HttpContext context)
     {
-        //byte[] userIdBytes = Utility.StringToByteArray(userId);
-
         var result = await _authenticationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginAuthenticationCeremonyRequest(
-                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: ["https://localhost:7167", "http://localhost:5136"]),
+                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: _configuration["AllowedOrigins"]!.Split(';')),
                 topOrigins: null,
                 userHandle: null,
                 challengeSize: 32,
@@ -128,13 +137,13 @@ public class WebAuthentication(
         string cacheKey = context.Request.Headers[WEBAUTHN_AUTHENTICATION_HEADER]!;
         ArgumentException.ThrowIfNullOrWhiteSpace(cacheKey, nameof(cacheKey));
 
-        string? authenticationCeremonyId = _cache.Get<string>(cacheKey);
+        string? authenticationCeremonyId = await _cache.GetAsync(cacheKey);
         ArgumentException.ThrowIfNullOrWhiteSpace(authenticationCeremonyId, nameof(authenticationCeremonyId));
 
         var result = await _authenticationCeremonyService.CompleteCeremonyAsync(
             httpContext: context,
             request: new CompleteAuthenticationCeremonyRequest(
-                authenticationCeremonyId: authenticationCeremonyId,
+                authenticationCeremonyId: authenticationCeremonyId.Replace("\"", string.Empty),
                 response: responseJSON),
             cancellationToken: CancellationToken.None);
 
