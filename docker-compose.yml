@@ -4,6 +4,7 @@ name: web-authentication-demo
 services:
 
   client:
+    image: hubviwe/web-authentication-demo.client:0.0.1
     container_name: client
     hostname: client
     build:
@@ -15,6 +16,7 @@ services:
       - api
 
   api:
+    image: hubviwe/web-authentication-demo.api:0.0.1
     container_name: api
     hostname: api
     restart: on-failure
@@ -27,6 +29,7 @@ services:
       - 5291:8080
     depends_on:
       - mssql
+      - redis-cache
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-CU18-ubuntu-20.04
