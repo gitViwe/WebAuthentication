@@ -36,6 +36,8 @@ services:
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: Example123
+    volumes:
+      - sqlsystem:/var/opt/mssql/
 
   redis-cache:
     image: redis:latest
@@ -44,3 +46,6 @@ services:
     container_name: redis-cache
     ports:
       - 6379:6379
+
+volumes:
+  sqlsystem:

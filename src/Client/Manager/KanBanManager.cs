@@ -38,7 +38,9 @@ public class KanBanManager(IHttpClientFactory Factory, ISnackbar snackbar)
 		{
 			snackbar.Add("Updated.", Severity.Info);
 		}
-
-		snackbar.Add(response.ReasonPhrase, Severity.Error);
+		else
+		{
+			snackbar.Add(response.ReasonPhrase, Severity.Error);
+		}
 	}
 }
