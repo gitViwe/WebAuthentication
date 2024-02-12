@@ -30,5 +30,6 @@ app.CreateDatabaseTable();
 
 app.MapRegistrationEndpoint();
 app.MapAuthenticationEndpoint();
+app.MapUserDetailEndpoint();
 
 app.Run();

@@ -12,7 +12,7 @@ public class WebAuthenticationManager(IHttpClientFactory Factory, ISnackbar snac
 {
     public HttpClient Client { get; } = Factory.CreateClient("API");
 
-    public async Task<string> ProcessRegistrationAsync(string registrationId)
+    public async Task<string> ProcessRegistrationAsync(string registrationId, string userName)
     {
         try
         {
@@ -20,7 +20,7 @@ public class WebAuthenticationManager(IHttpClientFactory Factory, ISnackbar snac
 
             var response = await runtime.InvokeAsync<RegistrationResponseJSON>("ProcessRegistration", [options]);
 
-            return await CompleteRegistrationAsync(response);
+            return await CompleteRegistrationAsync(response, userName);
         }
         catch (Exception ex)
         {
@@ -56,11 +56,12 @@ public class WebAuthenticationManager(IHttpClientFactory Factory, ISnackbar snac
         return options;
     }
 
-    private async Task<string> CompleteRegistrationAsync(RegistrationResponseJSON json)
+    private async Task<string> CompleteRegistrationAsync(RegistrationResponseJSON json, string userName)
     {
-        var responseMessage = await Client.PostAsJsonAsync("complete-registration", json, CancellationToken.None);
+        var responseMessage = await Client.PostAsJsonAsync($"complete-registration?UserName={userName}", json, CancellationToken.None);
         string userId = await responseMessage.Content.ReadAsStringAsync();
-        return userId;
+		snackbar.Add("Registered.", Severity.Info);
+		return userId;
     }
 
     private async Task<PublicKeyCredentialRequestOptionsJSON> GetAuthenticationOptionsAsync(string authenticationId)

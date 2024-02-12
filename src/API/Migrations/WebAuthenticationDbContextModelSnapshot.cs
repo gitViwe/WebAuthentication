@@ -40,13 +40,12 @@ namespace API.Migrations
                     b.Property<bool>("NewTaskOpen")
                         .HasColumnType("bit");
 
-                    b.Property<string>("UserDetailId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserDetailId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("KanBanSections");
                 });
@@ -79,8 +78,11 @@ namespace API.Migrations
 
             modelBuilder.Entity("Shared.UserDetail", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -91,11 +93,33 @@ namespace API.Migrations
                     b.ToTable("UserDetails");
                 });
 
+            modelBuilder.Entity("Shared.UserDetailHandle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("UserHandle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDetailHandles");
+                });
+
             modelBuilder.Entity("Shared.KanBanSection", b =>
                 {
                     b.HasOne("Shared.UserDetail", "UserDetail")
                         .WithMany("KanBanSections")
-                        .HasForeignKey("UserDetailId")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -113,6 +137,17 @@ namespace API.Migrations
                     b.Navigation("KanBanSection");
                 });
 
+            modelBuilder.Entity("Shared.UserDetailHandle", b =>
+                {
+                    b.HasOne("Shared.UserDetail", "UserDetail")
+                        .WithMany("UserDetailHandles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UserDetail");
+                });
+
             modelBuilder.Entity("Shared.KanBanSection", b =>
                 {
                     b.Navigation("KanBanTaskItems");
@@ -121,6 +156,8 @@ namespace API.Migrations
             modelBuilder.Entity("Shared.UserDetail", b =>
                 {
                     b.Navigation("KanBanSections");
+
+                    b.Navigation("UserDetailHandles");
                 });
 #pragma warning restore 612, 618
         }

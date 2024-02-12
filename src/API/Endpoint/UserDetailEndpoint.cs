@@ -2,51 +2,84 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Shared;
+using static System.Collections.Specialized.BitVector32;
 
 namespace API.Endpoint;
 
 public static class UserDetailEndpoint
 {
+	public static IEndpointRouteBuilder MapUserDetailEndpoint(this IEndpointRouteBuilder app)
+	{
+		app.MapGet("/users/{userId}", GetUserDetailAsync)
+			.WithName("User Detail")
+			.Produces<UserDetail>()
+			.ProducesProblem(StatusCodes.Status404NotFound)
+			.WithOpenApi();
+
+		app.MapPut("/kanban", UpdateKanBanAsync)
+			.WithName("Update Kanban")
+			.ProducesProblem(StatusCodes.Status404NotFound)
+			.WithOpenApi();
+
+		return app;
+	}
 
 	private static async Task<IResult> GetUserDetailAsync(
 		[FromRoute] string userId,
 		[FromServices] WebAuthenticationDbContext dbContext,
 		CancellationToken cancellation = default)
 	{
-		var user = await dbContext.UserDetails
+		var userHandle = await dbContext.UserDetailHandles
 			.AsNoTracking()
-			.Include(user => user.KanBanSections)
-				.ThenInclude(section => section.KanBanTaskItems)
-			.FirstOrDefaultAsync(user => user.Id == userId, cancellation);
+			.FirstOrDefaultAsync((handle => handle.UserHandle.Equals(userId.Replace("\"", string.Empty))), cancellationToken: cancellation);
 
-		return user is null
-			? Results.NotFound()
-			: Results.Ok(user);
-	}
-
-	private static async Task<IResult> UpdateKanBanAsync(
-		[FromForm] UserDetail detail,
-		[FromServices] WebAuthenticationDbContext dbContext,
-		CancellationToken cancellation = default)
-	{
-		var user = await dbContext.UserDetails.FirstOrDefaultAsync(user => user.Id == detail.Id, cancellationToken: cancellation);
-
-		if (user is null)
+		if (userHandle is null)
 		{
 			return Results.NotFound();
 		}
 
-		user.KanBanSections.Clear();
+		var user = await dbContext.UserDetails
+			.AsNoTracking()
+			.Include(user => user.KanBanSections)
+				.ThenInclude(section => section.KanBanTaskItems)
+			.FirstOrDefaultAsync(user => user.Id == userHandle.UserId, cancellationToken: cancellation);
 
-		await dbContext.SaveChangesAsync(cancellation);
+		return user is null
+			? Results.NotFound()
+			: Results.Ok(UserDetailDTO.ToDTO(user));
+	}
 
-		foreach (var section in detail.KanBanSections)
+	private static async Task<IResult> UpdateKanBanAsync(
+		[FromBody] KanBanDialogData data,
+		[FromServices] WebAuthenticationDbContext dbContext,
+		CancellationToken cancellation = default)
+	{
+		await dbContext.KanBanSections
+			.Where(section => section.UserId == data.Id)
+			.ExecuteDeleteAsync(cancellation);
+
+		var user = await dbContext.UserDetails
+			.Include(user => user.KanBanSections)
+				.ThenInclude(section => section.KanBanTaskItems)
+			.FirstOrDefaultAsync(user => user.Id == data.Id, cancellationToken: cancellation);
+
+		foreach (var section in data.KanBanSections.Select(section => new KanBanSection()
+		{
+			Name = section.Name,
+			NewTaskName = section.NewTaskName,
+			NewTaskOpen = section.NewTaskOpen,
+			KanBanTaskItems = data.KanBanTaskItems.Where(x => x.Status == section.Name).Select(x => new KanBanTaskItem
+			{
+				Name = x.Name,
+				Status = x.Status,
+			}).ToList()
+		}))
 		{
 			user.KanBanSections.Add(section);
 		}
 
 		await dbContext.SaveChangesAsync(cancellation);
 
-		return Results.Ok(user);
+		return Results.Ok();
 	}
 }

@@ -1,8 +1,6 @@
-﻿@using Shared
-
-<MudDialog>
+﻿<MudDialog>
     <DialogContent>
-		<MudDropContainer T="KanBanTaskItem" @ref="_dropContainer" Items="@_tasks" ItemsSelector="@((item,column) => item.Status == column)" ItemDropped="TaskUpdated" Class="d-flex flex-row">
+		<MudDropContainer T="KanbanTaskItem" @ref="_dropContainer" Items="@_tasks" ItemsSelector="@((item,column) => item.Status == column)" ItemDropped="TaskUpdated" Class="d-flex flex-row">
 			<ChildContent>
 				@foreach (var item in _sections)
 				{
@@ -15,7 +13,7 @@
 								<MudButton Size="Size.Small" Color="Color.Default" StartIcon="@Icons.Material.Rounded.Edit">Rename Section</MudButton>
 							</MudMenu>
 						</MudToolBar>
-						<MudDropZone T="KanBanTaskItem" Identifier="@item.Name" Class="mud-height-full" />
+						<MudDropZone T="KanbanTaskItem" Identifier="@item.Name" Class="mud-height-full" />
 						@if (item.NewTaskOpen)
 						{
 							<MudPaper Elevation="25" Class="pa-2 rounded-lg">

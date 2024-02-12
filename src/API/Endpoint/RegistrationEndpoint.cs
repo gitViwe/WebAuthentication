@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API.Persistence;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shared;
 using WebAuthn.Net.Models.Protocol.Json.RegistrationCeremony.CreateCredential;
 using WebAuthn.Net.Models.Protocol.Json.RegistrationCeremony.CreateOptions;
 
@@ -23,7 +26,7 @@ public static class RegistrationEndpoint
 
     private static async Task<IResult> GetRegistrationOptionsAsync(
         [FromServices] WebAuthentication auth,
-        HttpContext context)
+		HttpContext context)
     {
         string userId = Utility.GenerateHexString(16);
         var options = await auth.GetRegistrationOptionsAsync(context, userId);
@@ -32,14 +35,28 @@ public static class RegistrationEndpoint
     }
 
     private static async Task<IResult> CompleteRegistrationAsync(
-        [FromServices] WebAuthentication auth,
+		[FromQuery] string UserName,
+		[FromServices] WebAuthentication auth,
+        [FromBody] RegistrationResponseJSON json,
         HttpContext context,
-        [FromBody] RegistrationResponseJSON json)
+		WebAuthenticationDbContext dbContext)
     {
         byte[] userHandle = await auth.CompleteRegistrationAsync(context, json);
 
         string userId = Utility.ByteArrayToString(userHandle);
 
-        return Results.Ok(userId);
+		var user = await dbContext.UserDetails.FirstOrDefaultAsync(user => user.UserName.Equals(UserName));
+
+		if (user is null)
+		{
+			user = new UserDetail() { UserName = UserName };
+			await dbContext.AddAsync(user);
+			await dbContext.SaveChangesAsync();
+		}
+
+		user.UserDetailHandles.Add(new() { UserHandle = userId });
+		await dbContext.SaveChangesAsync();
+
+		return Results.Ok(userId);
     }
 }

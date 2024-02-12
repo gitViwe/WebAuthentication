@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
 using Shared;
+using System.ComponentModel.DataAnnotations;
 
 namespace Client.Pages;
 
@@ -14,15 +15,14 @@ public partial class KanBanDialog
 	{
 		if (_sections.Count != 0)
 		{
-			Model.KanBanSections = _sections.Select(section => new KanBanSection
+			Model.KanBanSections = _sections.Select(section => new KanBanSectionDTO
 			{
 				Name = section.Name,
 				NewTaskName = section.NewTaskName,
 				NewTaskOpen = section.NewTaskOpen,
-				KanBanTaskItems = section.KanBanTaskItems.Where(item => item.Status.Equals(section.Name))
-												   .Select(item => new KanBanTaskItem { Name = item.Name, Status =  item.Status })
-												   .ToList()
 			});
+
+			Model.KanBanTaskItems = _tasks.Select(item => new KanBanTaskItemDTO { Name = item.Name, Status = item.Status });
 		}
 		
 		MudDialog.Close(Model);
@@ -30,53 +30,63 @@ public partial class KanBanDialog
 
 	void Cancel() => MudDialog.Cancel();
 
-	private MudDropContainer<KanBanTaskItem> _dropContainer;
+	protected override void OnInitialized()
+	{
+		_sections = Model.KanBanSections.Select(x => new KanBanSections(x.Name, x.NewTaskOpen, x.NewTaskName)).ToList();
+		_tasks = Model.KanBanTaskItems.Select(x => new KanbanTaskItem(x.Name, x.Status)).ToList();
+	}
+
+	private MudDropContainer<KanbanTaskItem> _dropContainer;
 
 	private bool _addSectionOpen;
 	/* handling board events */
-	private void TaskUpdated(MudItemDropInfo<KanBanTaskItem> info)
+	private void TaskUpdated(MudItemDropInfo<KanbanTaskItem> info)
 	{
 		info.Item.Status = info.DropzoneIdentifier;
 	}
 
 	/* Setup for board  */
-	private List<KanBanSection> _sections = [];
+	private List<KanBanSections> _sections = [];
 
-	private List<KanBanTaskItem> _tasks = [];
+	public class KanBanSections
+	{
+		public string Name { get; init; }
+		public bool NewTaskOpen { get; set; }
+		public string NewTaskName { get; set; }
 
-	KanBanNewForm newSectionModel = new();
+		public KanBanSections(string name, bool newTaskOpen, string newTaskName)
+		{
+			Name = name;
+			NewTaskOpen = newTaskOpen;
+			NewTaskName = newTaskName;
+		}
+	}
+	public class KanbanTaskItem
+	{
+		public string Name { get; init; }
+		public string Status { get; set; }
+
+		public KanbanTaskItem(string name, string status)
+		{
+			Name = name;
+			Status = status;
+		}
+	}
+
+	private List<KanbanTaskItem> _tasks = [];
+
+	KanBanNewForm newSectionModel = new KanBanNewForm();
 
 	public class KanBanNewForm
 	{
-		[System.ComponentModel.DataAnnotations.Required]
-		[System.ComponentModel.DataAnnotations.StringLength(10, ErrorMessage = "Name length can't be more than 10.")]
-		public string Name { get; set; } = string.Empty;
-	}
-
-	protected override Task OnInitializedAsync()
-	{
-		_sections = Model.KanBanSections.Any()
-			? Model.KanBanSections.ToList()
-			: [
-				new() { Name = "To Do", NewTaskOpen = false, NewTaskName = string.Empty },
-				new() { Name = "In Process", NewTaskOpen = false, NewTaskName = string.Empty },
-				new() { Name = "Done", NewTaskOpen = false, NewTaskName = string.Empty },
-			];
-
-		_tasks = Model.KanBanSections.SelectMany(x => x.KanBanTaskItems).Any()
-			? Model.KanBanSections.SelectMany(x => x.KanBanTaskItems).ToList()
-			: [
-				new() { Name = "Write unit test", Status = "To Do" },
-				new() { Name = "Some docu stuff", Status = "To Do" },
-				new() { Name = "Walking the dog", Status = "To Do" },
-			];
-
-		return Task.CompletedTask;
+		[Required]
+		[StringLength(10, ErrorMessage = "Name length can't be more than 10.")]
+		public string Name { get; set; }
 	}
 
 	private void OnValidSectionSubmit(EditContext context)
 	{
-		_sections.Add(new() { Name = newSectionModel.Name, NewTaskOpen = false, NewTaskName = string.Empty });
+		_sections.Add(new KanBanSections(newSectionModel.Name, false, String.Empty));
 		newSectionModel.Name = string.Empty;
 		_addSectionOpen = false;
 	}
@@ -86,15 +96,15 @@ public partial class KanBanDialog
 		_addSectionOpen = true;
 	}
 
-	private void AddTask(KanBanSection section)
+	private void AddTask(KanBanSections section)
 	{
-		_tasks.Add(new() { Name = section.NewTaskName, Status = section.Name });
+		_tasks.Add(new KanbanTaskItem(section.NewTaskName, section.Name));
 		section.NewTaskName = string.Empty;
 		section.NewTaskOpen = false;
 		_dropContainer.Refresh();
 	}
 
-	private void DeleteSection(KanBanSection section)
+	private void DeleteSection(KanBanSections section)
 	{
 		if (_sections.Count == 1)
 		{

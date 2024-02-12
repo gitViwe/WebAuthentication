@@ -2,7 +2,8 @@
 
 public class KanBanDialogData
 {
-	public string Id { get; set; } = string.Empty;
+	public int Id { get; set; }
 	public string UserName { get; set; } = string.Empty;
-	public IEnumerable<KanBanSection> KanBanSections { get; set; } = Enumerable.Empty<KanBanSection>();
+	public IEnumerable<KanBanSectionDTO> KanBanSections { get; set; } = Enumerable.Empty<KanBanSectionDTO>();
+	public IEnumerable<KanBanTaskItemDTO> KanBanTaskItems { get; set; } = Enumerable.Empty<KanBanTaskItemDTO>();
 }
