@@ -10,7 +10,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var baseUri = new Uri(builder.HostEnvironment.BaseAddress);
 
-var apiUri = baseUri.Scheme + Uri.SchemeDelimiter + baseUri.Host + "/:5291";
+var apiUri = baseUri.Scheme + Uri.SchemeDelimiter + baseUri.Host + ":5291";
 
 builder.Services
     .AddScoped<KanBanManager>()
