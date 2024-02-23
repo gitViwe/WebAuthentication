@@ -31,9 +31,9 @@ public static class AuthenticationEndpoint
     }
 
     private static async Task<IResult> CompleteAuthenticationAsync(
+        [FromBody] AuthenticationResponseJSON json,
         [FromServices] WebAuthentication auth,
-        HttpContext context,
-        [FromBody] AuthenticationResponseJSON json)
+        HttpContext context)
     {
         byte[] userHandle = await auth.CompleteAuthenticationAsync(context, json);
 
