@@ -1,6 +1,8 @@
 using API.Endpoint;
 using API.Extension;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using System.Net.Mime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,8 +28,14 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions
+{
+    //FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, "wwwroot")),
+    ServeUnknownFileTypes = true,
+});
 app.CreateDatabaseTable();
 
+app.MapGet("/", () => Results.Redirect("/index.html"));
 app.MapRegistrationEndpoint();
 app.MapAuthenticationEndpoint();
 app.MapUserDetailEndpoint();
