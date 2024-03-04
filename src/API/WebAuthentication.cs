@@ -41,11 +41,12 @@ public class WebAuthentication
 
     public async Task<PublicKeyCredentialCreationOptionsJSON> GetRegistrationOptionsAsync(HttpContext context, byte[] userIdBytes, string userName = "User Display Name")
     {
+        string[] origins = [.. _configuration["AllowedOrigins"]!.Split(';'), $"http://{context.Request.Host}", $"https://{context.Request.Host}"];
 
         var result = await _registrationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginRegistrationCeremonyRequest(
-                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: _configuration["AllowedOrigins"]!.Split(';')),
+                origins: new RegistrationCeremonyOriginParameters(allowedOrigins: origins),
                 topOrigins: null,
                 rpDisplayName: "Passkeys demonstration",
                 user: new PublicKeyCredentialUserEntity(
@@ -109,10 +110,12 @@ public class WebAuthentication
 
     public async Task<PublicKeyCredentialRequestOptionsJSON> GetAuthenticationOptionsAsync(HttpContext context)
     {
+        string[] origins = [.. _configuration["AllowedOrigins"]!.Split(';'), $"http://{context.Request.Host}", $"https://{context.Request.Host}"];
+
         var result = await _authenticationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
             request: new BeginAuthenticationCeremonyRequest(
-                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: _configuration["AllowedOrigins"]!.Split(';')),
+                origins: new AuthenticationCeremonyOriginParameters(allowedOrigins: origins),
                 topOrigins: null,
                 userHandle: null,
                 challengeSize: 32,
