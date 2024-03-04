@@ -1,8 +1,6 @@
 using API.Endpoint;
 using API.Extension;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
-using System.Net.Mime;
 
 var builder = WebApplication.CreateBuilder(args);
 

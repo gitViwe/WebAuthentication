@@ -14,7 +14,6 @@ public partial class Home
     public UserData Model { get; set; } = new(string.Empty, string.Empty);
 
     private bool _processing = false;
-    private string _userId = string.Empty;
     private IJSObjectReference module = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -30,7 +29,7 @@ public partial class Home
     {
         _processing = true;
 
-        _userId = await WebAuthenticationManager.ProcessRegistrationAsync(registrationId: Guid.NewGuid().ToString(), Model.RegisteredUserName);
+        _ = await WebAuthenticationManager.ProcessRegistrationAsync(registrationId: Guid.NewGuid().ToString(), Model.RegisteredUserName);
 
         _processing = false;
     }
@@ -39,19 +38,18 @@ public partial class Home
     {
         _processing = true;
 
-        _userId = await WebAuthenticationManager.ProcessAuthenticationAsync(authenticationId: Guid.NewGuid().ToString());
+        string userHandleBase64 = await WebAuthenticationManager.ProcessAuthenticationAsync(authenticationId: Guid.NewGuid().ToString());
 
         _processing = false;
 
-        await ShowDialog();
-
+        await ShowDialog(userHandleBase64);
 	}
 
-    private async Task ShowDialog()
+    private async Task ShowDialog(string userHandleBase64)
     {
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
 
-		var data = await KanBanManager.GetUserDetailAsKanBanDialogDataAsync(_userId);
+		var data = await KanBanManager.GetUserDetailAsKanBanDialogDataAsync(userHandleBase64);
 
         if (data is not null)
         {

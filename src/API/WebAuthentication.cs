@@ -1,4 +1,5 @@
-﻿using gitViwe.Shared.Cache;
+﻿using Azure.Core;
+using gitViwe.Shared.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using WebAuthn.Net.Models.Protocol.Enums;
 using WebAuthn.Net.Models.Protocol.Json.AuthenticationCeremony.CreateOptions;
@@ -38,9 +39,8 @@ public class WebAuthentication
     private const string WEBAUTHN_REGISTRATION_HEADER = "X-WebAuthn-Registration-Id";
     private const string WEBAUTHN_AUTHENTICATION_HEADER = "X-WebAuthn-Authentication-Id";
 
-    public async Task<PublicKeyCredentialCreationOptionsJSON> GetRegistrationOptionsAsync(HttpContext context, string userId)
+    public async Task<PublicKeyCredentialCreationOptionsJSON> GetRegistrationOptionsAsync(HttpContext context, byte[] userIdBytes, string userName = "User Display Name")
     {
-        byte[] userIdBytes = Utility.StringToByteArray(userId);
 
         var result = await _registrationCeremonyService.BeginCeremonyAsync(
             httpContext: context,
@@ -49,9 +49,9 @@ public class WebAuthentication
                 topOrigins: null,
                 rpDisplayName: "Passkeys demonstration",
                 user: new PublicKeyCredentialUserEntity(
-                    name: "Demonstration user",
+                    name: $"{context.Request.Scheme}://{context.Request.Host}",
                     id: userIdBytes,
-                    displayName: "User Display Name"),
+                    displayName: userName),
                 challengeSize: 32,
                 pubKeyCredParams:
                 [
